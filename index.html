@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>F&O Intelligence</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #030712; color: white; font-family: 'SF Pro Display', 'Segoe UI', system-ui, sans-serif; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 4px; }
+
+    .setup-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .setup-card { background: #0a0f1a; border: 1px solid #1f2937; border-radius: 20px; padding: 32px 28px; max-width: 440px; width: 100%; }
+    .setup-title { font-size: 26px; font-weight: 800; margin-bottom: 6px; background: linear-gradient(135deg, #6366f1, #0ea5e9, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .setup-sub { font-size: 13px; color: #4b5563; margin-bottom: 28px; line-height: 1.6; }
+    .setup-label { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 8px; }
+    .setup-input { width: 100%; padding: 13px 14px; border-radius: 12px; background: #111827; border: 1.5px solid #1f2937; color: white; font-size: 13px; outline: none; margin-bottom: 6px; font-family: monospace; }
+    .setup-input:focus { border-color: #6366f1; }
+    .setup-input::placeholder { color: #374151; }
+    .setup-hint { font-size: 11px; color: #374151; margin-bottom: 20px; line-height: 1.6; }
+    .setup-hint a { color: #6366f1; text-decoration: none; }
+    .setup-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; background: linear-gradient(135deg, #6366f1, #0ea5e9); color: white; font-weight: 800; font-size: 15px; cursor: pointer; transition: opacity 0.2s; }
+    .setup-btn:hover { opacity: 0.9; }
+    .setup-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .setup-steps { margin-top: 20px; padding: 16px; border-radius: 12px; background: #0f172a; border: 1px solid #1f2937; }
+    .setup-steps-title { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; }
+    .step-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-start; }
+    .step-num { width: 20px; height: 20px; border-radius: 50%; background: #6366f1; color: white; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+    .step-text { font-size: 12px; color: #6b7280; line-height: 1.5; }
+    .step-text a { color: #6366f1; text-decoration: none; }
+    .step-text strong { color: #9ca3af; }
+
+    .app { min-height: 100vh; padding: 20px 16px 60px; }
+    .container { max-width: 480px; margin: 0 auto; }
+    .header { text-align: center; margin-bottom: 24px; }
+    .header-tag { font-size: 10px; letter-spacing: 0.2em; color: #4b5563; text-transform: uppercase; margin-bottom: 4px; }
+    .header-title { font-size: 26px; font-weight: 800; background: linear-gradient(135deg, #6366f1, #0ea5e9, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .header-sub { font-size: 12px; color: #4b5563; margin-top: 4px; }
+
+    .key-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding: 8px 12px; background: #0f172a; border-radius: 10px; border: 1px solid #1f2937; }
+    .key-status { font-size: 11px; color: #374151; }
+    .change-key-btn { font-size: 11px; color: #4b5563; background: none; border: 1px solid #1f2937; padding: 4px 10px; border-radius: 8px; cursor: pointer; }
+    .change-key-btn:hover { color: #6366f1; border-color: #6366f1; }
+
+    .section-label { font-size: 10px; color: #4b5563; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 8px; }
+    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 14px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+    .grid3e { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+
+    .inst-btn { padding: 10px 6px; border-radius: 12px; border: 1.5px solid #1f2937; background: #0f172a; cursor: pointer; text-align: center; transition: all 0.2s; }
+    .inst-emoji { font-size: 18px; margin-bottom: 2px; }
+    .inst-short { font-size: 10px; font-weight: 700; }
+    .inst-exch { font-size: 9px; color: #374151; margin-top: 1px; }
+
+    .mode-btn { padding: 10px 6px; border-radius: 12px; border: 1.5px solid #1f2937; background: #0f172a; cursor: pointer; text-align: center; transition: all 0.2s; }
+    .mode-btn.active { border-color: #6366f1; background: rgba(99,102,241,0.08); }
+    .mode-emoji { font-size: 18px; margin-bottom: 2px; }
+    .mode-label { font-size: 10px; font-weight: 700; }
+    .mode-desc { font-size: 9px; color: #374151; margin-top: 1px; }
+
+    .analyse-btn { width: 100%; padding: 16px; border-radius: 14px; border: none; color: white; font-weight: 800; font-size: 15px; cursor: pointer; margin-bottom: 6px; transition: all 0.3s; }
+    .analyse-btn:disabled { background: #1f2937 !important; box-shadow: none !important; cursor: not-allowed; }
+
+    .updated-text { text-align: center; font-size: 11px; color: #374151; margin-bottom: 16px; }
+    .error-box { padding: 14px; border-radius: 12px; background: #1c0a0a; border: 1px solid #dc2626; color: #fca5a5; font-size: 13px; margin-bottom: 12px; line-height: 1.5; }
+
+    .result-card { background: #0a0f1a; border-radius: 18px; border: 1px solid #1f2937; overflow: hidden; }
+    .result-header { padding: 14px 16px; background: #0f172a; border-bottom: 1px solid #1f2937; }
+    .result-top { display: flex; align-items: center; justify-content: space-between; }
+    .result-name { font-weight: 800; font-size: 15px; }
+    .result-sub { font-size: 11px; color: #4b5563; }
+    .result-price-val { font-size: 20px; font-weight: 900; }
+    .result-change { font-size: 11px; color: #4b5563; }
+    .bias-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .bias-pill { padding: 5px 12px; border-radius: 999px; font-weight: 800; font-size: 13px; }
+    .badge { padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; border: 1px solid; }
+
+    .tabs { display: flex; border-bottom: 1px solid #1f2937; }
+    .tab-btn { flex: 1; padding: 10px 2px; border: none; background: transparent; font-size: 9px; cursor: pointer; transition: all 0.2s; border-bottom: 2px solid transparent; }
+    .tab-content { padding: 16px; }
+
+    .action-card { border-radius: 16px; padding: 18px; margin-bottom: 8px; }
+    .action-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .mini-card { border-radius: 12px; padding: 12px; }
+    .mini-label { font-size: 11px; margin-bottom: 4px; }
+    .mini-val { font-weight: 700; font-size: 14px; }
+    .gain-row { display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
+    .one-liner { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 13px; color: #9ca3af; font-style: italic; }
+
+    .data-row { background: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 12px; margin-bottom: 8px; }
+    .data-label { font-size: 11px; color: #6b7280; margin-bottom: 4px; }
+    .data-val { font-size: 13px; color: #e5e7eb; line-height: 1.5; }
+    .data-val-lg { font-size: 18px; font-weight: 900; }
+    .data-val-sm { font-size: 13px; font-weight: 700; }
+
+    .bullet-list { list-style: none; }
+    .bullet-list li { display: flex; gap: 8px; font-size: 13px; color: #d1d5db; margin-bottom: 6px; }
+    .tag { display: inline-block; padding: 4px 10px; border-radius: 8px; font-size: 11px; margin: 3px; }
+
+    .empty-state { text-align: center; padding: 40px 0; color: #374151; }
+    .footer-note { text-align: center; font-size: 10px; color: #1f2937; margin-top: 20px; }
+    .spin { display: inline-block; animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+  const { useState } = React;
+
+  const INSTRUMENTS = [
+    { id: "nifty",      label: "Nifty 50",    short: "NIFTY",  emoji: "📈", exchange: "NSE", expiry: "weekly",  color: "#6366f1", lotSize: 25,   mcx: false },
+    { id: "banknifty",  label: "BankNifty",   short: "BNIFTY", emoji: "🏦", exchange: "NSE", expiry: "weekly",  color: "#0ea5e9", lotSize: 15,   mcx: false },
+    { id: "sensex",     label: "Sensex",      short: "SENSEX", emoji: "📊", exchange: "BSE", expiry: "weekly",  color: "#8b5cf6", lotSize: 10,   mcx: false },
+    { id: "crude",      label: "Crude Oil",   short: "CRUDE",  emoji: "🛢️", exchange: "MCX", expiry: "monthly", color: "#f59e0b", lotSize: 100,  mcx: true  },
+    { id: "gold",       label: "Gold",        short: "GOLD",   emoji: "🥇", exchange: "MCX", expiry: "monthly", color: "#eab308", lotSize: 100,  mcx: true  },
+    { id: "naturalgas", label: "Natural Gas", short: "NATGAS", emoji: "🔥", exchange: "MCX", expiry: "monthly", color: "#ef4444", lotSize: 1250, mcx: true  },
+  ];
+
+  const MODES = [
+    { id: "morning",  label: "Morning",  emoji: "🌅", desc: "Pre-market"   },
+    { id: "intraday", label: "Intraday", emoji: "⚡", desc: "Live session" },
+    { id: "eod",      label: "EOD",      emoji: "🌙", desc: "End of day"   },
+  ];
+
+  function buildPrompt(inst, mode) {
+    const modeCtx = {
+      morning:  "PRE-MARKET before 9:15 AM IST. Focus on overnight global cues, SGX Nifty, US market close, Asian markets.",
+      intraday: "INTRADAY live session. Focus on current momentum, breaking news, session high/low.",
+      eod:      "END OF DAY. Focus on today's close, what drove the move, next session outlook.",
+    };
+    return `You are an expert Indian F&O trader and options strategist with 15+ years experience.
+
+Instrument: ${inst.label} (${inst.exchange}, ${inst.expiry} expiry, lot size: ${inst.lotSize})
+Mode: ${modeCtx[mode]}
+Capital: ${inst.mcx ? "₹50,000+" : "under ₹25,000"}
+
+Search the web for latest news, global cues, technical levels, FII/DII data for ${inst.label} right now.
+
+Respond ONLY in this exact JSON (no markdown, pure JSON):
+{
+  "current_price": "price",
+  "day_range": "low - high",
+  "change": "+/- (percentage)",
+  "simple": {
+    "action": "BUY CALL or BUY PUT or AVOID",
+    "strike": "e.g. 24500 CE",
+    "entry_range": "e.g. ₹80-90",
+    "target": "e.g. ₹140",
+    "stop_loss": "e.g. ₹50",
+    "expiry": "date",
+    "expected_gain_pct": "e.g. 65%",
+    "risk_reward": "e.g. 1:2.5",
+    "max_loss": "e.g. ₹5,000",
+    "one_line": "one sentence explanation"
+  },
+  "bias": "BULLISH or BEARISH or NEUTRAL",
+  "bias_strength": "STRONG or MODERATE or WEAK",
+  "confidence": "HIGH or MEDIUM or LOW",
+  "technical": {
+    "trend": "UPTREND or DOWNTREND or SIDEWAYS",
+    "key_support": ["l1","l2"],
+    "key_resistance": ["l1","l2"],
+    "upside_target": "value",
+    "downside_target": "value",
+    "invalidation": "value",
+    "pattern": "e.g. Doji or None",
+    "volume_comment": "analysis",
+    "rsi_comment": "analysis",
+    "macd_comment": "analysis"
+  },
+  "oi_analysis": {
+    "pcr": "ratio",
+    "pcr_interpretation": "explanation",
+    "max_pain": "level",
+    "call_oi_buildup": "levels",
+    "put_oi_buildup": "levels",
+    "oi_comment": "analysis"
+  },
+  "detailed": {
+    "why_this_strike": "reason",
+    "strategy_name": "e.g. Long Call",
+    "greeks_context": "Delta/Theta/IV in simple words",
+    "news_catalyst": "key news",
+    "geopolitical": "factors",
+    "global_cues": "US/Asia/commodities",
+    "fii_dii": "comment",
+    "key_factors": ["f1","f2","f3","f4"],
+    "risk_factors": ["r1","r2","r3"],
+    "watch_levels": "levels to watch"
+  },
+  "upcoming_events": ["e1","e2"],
+  "news_summary": "2-3 sentences",
+  "disclaimer": "risk disclaimer"
+}`;
+  }
+
+  async function fetchAnalysis(apiKey, inst, mode) {
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+        "HTTP-Referer": window.location.href,
+        "X-Title": "F&O Intelligence",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.0-flash-exp:free",
+        max_tokens: 4000,
+        messages: [{ role: "user", content: buildPrompt(inst, mode) }],
+      }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = data.choices?.[0]?.message?.content || "";
+    const clean = text.replace(/```json|```/g, "").trim();
+    const s = clean.indexOf("{"), e = clean.lastIndexOf("}");
+    if (s === -1) throw new Error("Could not parse response. Try again.");
+    return JSON.parse(clean.substring(s, e + 1));
+  }
+
+  // ── Setup Screen ────────────────────────────────────────────────────────────
+  function SetupScreen({ onSave }) {
+    const [key, setKey] = useState("");
+    const valid = key.startsWith("sk-or-");
+    return (
+      <div className="setup-screen">
+        <div className="setup-card">
+          <div className="setup-title">F&O Intelligence</div>
+          <div className="setup-sub">
+            AI-powered F&O analysis — live news, technicals, OI data, trade suggestions for Nifty, BankNifty, Sensex, Crude, Gold & Natural Gas.
+          </div>
+
+          <div className="setup-label">OpenRouter API Key (Free)</div>
+          <input className="setup-input" type="password"
+            placeholder="sk-or-v1-..."
+            value={key} onChange={e => setKey(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && valid && onSave(key)} />
+          <div className="setup-hint">
+            Paste your key from <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a>
+          </div>
+          <button className="setup-btn" onClick={() => onSave(key)} disabled={!valid}>
+            Launch F&O Intelligence →
+          </button>
+
+          <div className="setup-steps">
+            <div className="setup-steps-title">How to get free API key (2 mins)</div>
+            <div className="step-row">
+              <div className="step-num">1</div>
+              <div className="step-text">Go to <a href="https://openrouter.ai" target="_blank">openrouter.ai</a> → Sign up free</div>
+            </div>
+            <div className="step-row">
+              <div className="step-num">2</div>
+              <div className="step-text">Go to <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a> → <strong>Create Key</strong></div>
+            </div>
+            <div className="step-row">
+              <div className="step-num">3</div>
+              <div className="step-text">Copy key (starts with <strong>sk-or-</strong>) → paste above</div>
+            </div>
+            <div className="step-row">
+              <div className="step-num">4</div>
+              <div className="step-text"><strong>Free models available</strong> — no credit card needed for free tier</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Main App ────────────────────────────────────────────────────────────────
+  function App() {
+    const [apiKey, setApiKey]       = useState(() => localStorage.getItem("fo_or_key") || "");
+    const [instrument, setInstrument] = useState("nifty");
+    const [mode, setMode]           = useState("morning");
+    const [loading, setLoading]     = useState(false);
+    const [analysis, setAnalysis]   = useState(null);
+    const [error, setError]         = useState(null);
+    const [tab, setTab]             = useState("simple");
+    const [updated, setUpdated]     = useState(null);
+
+    const inst    = INSTRUMENTS.find(i => i.id === instrument);
+    const modeObj = MODES.find(m => m.id === mode);
+
+    function saveKey(k) { localStorage.setItem("fo_or_key", k); setApiKey(k); }
+    function clearKey() { localStorage.removeItem("fo_or_key"); setApiKey(""); setAnalysis(null); }
+
+    async function runAnalysis() {
+      setLoading(true); setError(null); setAnalysis(null); setTab("simple");
+      try {
+        const result = await fetchAnalysis(apiKey, inst, mode);
+        setAnalysis(result);
+        setUpdated(new Date().toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata" }));
+      } catch(e) {
+        setError(`Error: ${e.message}`);
+      } finally { setLoading(false); }
+    }
+
+    if (!apiKey) return <SetupScreen onSave={saveKey} />;
+
+    const biasColor = analysis?.bias === "BULLISH" ? "#10b981" : analysis?.bias === "BEARISH" ? "#ef4444" : "#f59e0b";
+
+    return (
+      <div className="app">
+        <div className="container">
+
+          <div className="header">
+            <div className="header-tag">AI Powered • Free</div>
+            <div className="header-title">F&O Intelligence</div>
+            <div className="header-sub">Live news • Technicals • OI • Trade suggestions</div>
+          </div>
+
+          <div className="key-row">
+            <span className="key-status">✓ OpenRouter connected — Free tier</span>
+            <button className="change-key-btn" onClick={clearKey}>Change Key</button>
+          </div>
+
+          <div className="section-label">Select Instrument</div>
+          <div className="grid3">
+            {INSTRUMENTS.map(i => (
+              <button key={i.id} className="inst-btn"
+                onClick={() => { setInstrument(i.id); setAnalysis(null); }}
+                style={{ borderColor: instrument === i.id ? i.color : "#1f2937", background: instrument === i.id ? i.color+"15" : "#0f172a" }}>
+                <div className="inst-emoji">{i.emoji}</div>
+                <div className="inst-short" style={{color: instrument === i.id ? i.color : "#6b7280"}}>{i.short}</div>
+                <div className="inst-exch">{i.exchange}</div>
+              </button>
+            ))}
+          </div>
+
+          <div className="section-label">Analysis Mode</div>
+          <div className="grid3" style={{marginBottom:16}}>
+            {MODES.map(m => (
+              <button key={m.id} className={`mode-btn ${mode === m.id ? "active" : ""}`}
+                onClick={() => { setMode(m.id); setAnalysis(null); }}>
+                <div className="mode-emoji">{m.emoji}</div>
+                <div className="mode-label" style={{color: mode === m.id ? "#818cf8" : "#6b7280"}}>{m.label}</div>
+                <div className="mode-desc">{m.desc}</div>
+              </button>
+            ))}
+          </div>
+
+          <button className="analyse-btn" onClick={runAnalysis} disabled={loading}
+            style={{
+              background: loading ? "#1f2937" : `linear-gradient(135deg, ${inst.color}, #6366f1)`,
+              boxShadow: loading ? "none" : `0 0 30px ${inst.color}40`,
+            }}>
+            {loading
+              ? <span><span className="spin">⟳</span>  Searching live data & analysing...</span>
+              : `Analyse ${inst.label}  —  ${modeObj.label}`}
+          </button>
+
+          {updated && !loading && <div className="updated-text">Updated {updated} IST</div>}
+          {error && <div className="error-box">{error}</div>}
+
+          {analysis && (
+            <div className="result-card">
+              <div className="result-header">
+                <div className="result-top">
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <span style={{fontSize:22}}>{inst.emoji}</span>
+                    <div>
+                      <div className="result-name">{inst.label}</div>
+                      <div className="result-sub">{modeObj.emoji} {modeObj.label} • {inst.exchange}</div>
+                    </div>
+                  </div>
+                  <div style={{textAlign:"right"}}>
+                    <div className="result-price-val">{analysis.current_price}</div>
+                    <div className="result-change">{analysis.change}</div>
+                  </div>
+                </div>
+                <div className="bias-row">
+                  <div className="bias-pill" style={{background:biasColor+"20",border:`1px solid ${biasColor}50`,color:biasColor}}>
+                    {analysis.bias==="BULLISH"?"▲":analysis.bias==="BEARISH"?"▼":"→"} {analysis.bias}
+                  </div>
+                  <span className="badge" style={{
+                    background:analysis.bias==="BULLISH"?"#10b98120":analysis.bias==="BEARISH"?"#ef444420":"#f59e0b20",
+                    color:analysis.bias==="BULLISH"?"#6ee7b7":analysis.bias==="BEARISH"?"#fca5a5":"#fcd34d",
+                    borderColor:analysis.bias==="BULLISH"?"#10b98140":analysis.bias==="BEARISH"?"#ef444440":"#f59e0b40",
+                  }}>{analysis.bias_strength}</span>
+                  <span className="badge" style={{
+                    background:analysis.confidence==="HIGH"?"#10b98120":analysis.confidence==="MEDIUM"?"#f59e0b20":"#ef444420",
+                    color:analysis.confidence==="HIGH"?"#6ee7b7":analysis.confidence==="MEDIUM"?"#fcd34d":"#fca5a5",
+                    borderColor:analysis.confidence==="HIGH"?"#10b98140":analysis.confidence==="MEDIUM"?"#f59e0b40":"#ef444440",
+                  }}>Confidence: {analysis.confidence}</span>
+                </div>
+              </div>
+
+              <div className="tabs">
+                {[
+                  {id:"simple",    label:"📋 Trade Setup"},
+                  {id:"technical", label:"📊 Technical"},
+                  {id:"oi",        label:"🔢 OI Data"},
+                  {id:"detailed",  label:"🧠 Deep Analysis"},
+                ].map(t => (
+                  <button key={t.id} className="tab-btn" onClick={() => setTab(t.id)}
+                    style={{
+                      borderBottom:`2px solid ${tab===t.id?inst.color:"transparent"}`,
+                      color:tab===t.id?"white":"#4b5563",
+                      fontWeight:tab===t.id?700:400,
+                    }}>{t.label}</button>
+                ))}
+              </div>
+
+              <div className="tab-content">
+
+                {tab==="simple" && analysis.simple && (() => {
+                  const s = analysis.simple;
+                  const isCall=s.action?.includes("CALL"),isPut=s.action?.includes("PUT"),isAvoid=!isCall&&!isPut;
+                  const bg=isAvoid?"#1f2937":isCall?"#064e3b":"#450a0a";
+                  const border=isAvoid?"#374151":isCall?"#059669":"#dc2626";
+                  const accent=isAvoid?"#6b7280":isCall?"#10b981":"#ef4444";
+                  return (
+                    <div className="action-card" style={{background:bg,border:`1.5px solid ${border}`}}>
+                      <div className="action-top">
+                        <div style={{display:"flex",alignItems:"center",gap:12}}>
+                          <span style={{fontSize:28}}>{isCall?"📈":isPut?"📉":"⏸️"}</span>
+                          <div>
+                            <div style={{fontSize:11,color:"#9ca3af",textTransform:"uppercase",letterSpacing:"0.08em"}}>Suggested Action</div>
+                            <div style={{fontSize:24,fontWeight:900,color:accent}}>{s.action||"AVOID"}</div>
+                          </div>
+                        </div>
+                        <div style={{textAlign:"right"}}>
+                          <div style={{fontSize:11,color:"#9ca3af"}}>Risk/Reward</div>
+                          <div style={{fontSize:20,fontWeight:800,color:"white"}}>{s.risk_reward||"—"}</div>
+                        </div>
+                      </div>
+                      {!isAvoid && (
+                        <>
+                          <div className="grid2">
+                            <div className="mini-card" style={{background:"rgba(0,0,0,0.3)"}}>
+                              <div className="mini-label" style={{color:"#9ca3af"}}>Strike</div>
+                              <div className="mini-val" style={{color:"white"}}>{s.strike||"—"}</div>
+                            </div>
+                            <div className="mini-card" style={{background:"rgba(0,0,0,0.3)"}}>
+                              <div className="mini-label" style={{color:"#9ca3af"}}>Expiry</div>
+                              <div className="mini-val" style={{color:"white",fontSize:13}}>{s.expiry||"—"}</div>
+                            </div>
+                          </div>
+                          <div className="grid3e">
+                            <div className="mini-card" style={{background:"rgba(0,0,0,0.25)"}}>
+                              <div className="mini-label" style={{color:"#9ca3af",textAlign:"center"}}>Entry</div>
+                              <div className="mini-val" style={{color:"white",textAlign:"center",fontSize:13}}>{s.entry_range||"—"}</div>
+                            </div>
+                            <div className="mini-card" style={{background:"rgba(16,185,129,0.1)",border:"1px solid rgba(16,185,129,0.2)"}}>
+                              <div className="mini-label" style={{color:"#10b981",textAlign:"center"}}>Target</div>
+                              <div className="mini-val" style={{color:"#6ee7b7",textAlign:"center",fontSize:13}}>{s.target||"—"}</div>
+                            </div>
+                            <div className="mini-card" style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.2)"}}>
+                              <div className="mini-label" style={{color:"#ef4444",textAlign:"center"}}>Stop Loss</div>
+                              <div className="mini-val" style={{color:"#fca5a5",textAlign:"center",fontSize:13}}>{s.stop_loss||"—"}</div>
+                            </div>
+                          </div>
+                          <div className="gain-row">
+                            <span style={{color:"#9ca3af"}}>Expected: <strong style={{color:"#10b981"}}>{s.expected_gain_pct||"—"}</strong></span>
+                            <span style={{color:"#9ca3af"}}>Max loss: <strong style={{color:"#ef4444"}}>{s.max_loss||"—"}</strong></span>
+                          </div>
+                        </>
+                      )}
+                      {s.one_line&&<div className="one-liner">"{s.one_line}"</div>}
+                    </div>
+                  );
+                })()}
+
+                {tab==="technical" && analysis.technical && (() => {
+                  const t=analysis.technical;
+                  const tColor=t.trend==="UPTREND"?"#10b981":t.trend==="DOWNTREND"?"#ef4444":"#f59e0b";
+                  return (
+                    <div>
+                      <div className="grid2">
+                        <div className="data-row"><div className="data-label">Trend</div><div className="data-val-sm" style={{color:tColor}}>{t.trend}</div></div>
+                        <div className="data-row"><div className="data-label">Pattern</div><div className="data-val-sm" style={{color:"#a78bfa"}}>{t.pattern||"None"}</div></div>
+                      </div>
+                      <div className="grid2">
+                        <div className="data-row">
+                          <div className="data-label" style={{color:"#ef4444"}}>Resistance</div>
+                          {t.key_resistance?.map((l,i)=><div key={i} className="data-val-sm" style={{color:"#fca5a5"}}>{l}</div>)}
+                        </div>
+                        <div className="data-row">
+                          <div className="data-label" style={{color:"#10b981"}}>Support</div>
+                          {t.key_support?.map((l,i)=><div key={i} className="data-val-sm" style={{color:"#6ee7b7"}}>{l}</div>)}
+                        </div>
+                      </div>
+                      <div className="grid2">
+                        <div className="data-row" style={{background:"rgba(16,185,129,0.08)",borderColor:"rgba(16,185,129,0.2)"}}>
+                          <div className="data-label" style={{color:"#10b981"}}>▲ Upside</div>
+                          <div className="data-val-lg" style={{color:"#6ee7b7"}}>{t.upside_target||"—"}</div>
+                        </div>
+                        <div className="data-row" style={{background:"rgba(239,68,68,0.08)",borderColor:"rgba(239,68,68,0.2)"}}>
+                          <div className="data-label" style={{color:"#ef4444"}}>▼ Downside</div>
+                          <div className="data-val-lg" style={{color:"#fca5a5"}}>{t.downside_target||"—"}</div>
+                        </div>
+                      </div>
+                      <div className="data-row" style={{background:"#431407",borderColor:"rgba(245,158,11,0.3)",marginBottom:8}}>
+                        <div className="data-label" style={{color:"#f59e0b"}}>⚠️ Invalidates At</div>
+                        <div className="data-val-lg" style={{color:"#fcd34d"}}>{t.invalidation||"—"}</div>
+                      </div>
+                      {[{label:"📊 Volume",text:t.volume_comment},{label:"📉 RSI",text:t.rsi_comment},{label:"📈 MACD",text:t.macd_comment}]
+                        .filter(x=>x.text).map(({label,text})=>(
+                          <div key={label} className="data-row"><div className="data-label">{label}</div><div className="data-val">{text}</div></div>
+                        ))}
+                    </div>
+                  );
+                })()}
+
+                {tab==="oi" && analysis.oi_analysis && (() => {
+                  const oi=analysis.oi_analysis;
+                  return (
+                    <div>
+                      <div className="grid2">
+                        <div className="data-row" style={{textAlign:"center"}}>
+                          <div className="data-label">PCR Ratio</div>
+                          <div className="data-val-lg">{oi.pcr||"—"}</div>
+                          <div style={{fontSize:11,color:"#6b7280",marginTop:4}}>{oi.pcr_interpretation||""}</div>
+                        </div>
+                        <div className="data-row" style={{textAlign:"center"}}>
+                          <div className="data-label">Max Pain</div>
+                          <div className="data-val-lg" style={{color:"#a78bfa"}}>{oi.max_pain||"—"}</div>
+                        </div>
+                      </div>
+                      <div className="grid2">
+                        <div className="data-row" style={{borderColor:"rgba(239,68,68,0.2)"}}>
+                          <div className="data-label" style={{color:"#ef4444"}}>📛 Call OI</div>
+                          <div className="data-val-sm" style={{color:"#fca5a5"}}>{oi.call_oi_buildup||"—"}</div>
+                        </div>
+                        <div className="data-row" style={{borderColor:"rgba(16,185,129,0.2)"}}>
+                          <div className="data-label" style={{color:"#10b981"}}>🛡️ Put OI</div>
+                          <div className="data-val-sm" style={{color:"#6ee7b7"}}>{oi.put_oi_buildup||"—"}</div>
+                        </div>
+                      </div>
+                      {oi.oi_comment&&<div className="data-row"><div className="data-label">OI Analysis</div><div className="data-val">{oi.oi_comment}</div></div>}
+                    </div>
+                  );
+                })()}
+
+                {tab==="detailed" && analysis.detailed && (() => {
+                  const d=analysis.detailed;
+                  return (
+                    <div>
+                      {[
+                        {label:"💡 Why This Strike",  text:d.why_this_strike},
+                        {label:"🎯 Strategy",          text:d.strategy_name},
+                        {label:"🔢 Greeks",            text:d.greeks_context},
+                        {label:"📰 News Catalyst",     text:d.news_catalyst},
+                        {label:"🌍 Geopolitical",      text:d.geopolitical},
+                        {label:"🌐 Global Cues",       text:d.global_cues},
+                        {label:"📊 FII/DII",           text:d.fii_dii},
+                        {label:"👁️ Watch Levels",      text:d.watch_levels},
+                      ].filter(x=>x.text).map(({label,text})=>(
+                        <div key={label} className="data-row"><div className="data-label">{label}</div><div className="data-val">{text}</div></div>
+                      ))}
+                      {d.key_factors?.length>0&&(
+                        <div className="data-row">
+                          <div className="data-label">🔑 Key Factors</div>
+                          <ul className="bullet-list">{d.key_factors.map((f,i)=><li key={i}><span style={{color:"#6366f1"}}>•</span><span>{f}</span></li>)}</ul>
+                        </div>
+                      )}
+                      {d.risk_factors?.length>0&&(
+                        <div className="data-row" style={{background:"#1c0a0a",borderColor:"rgba(220,38,38,0.3)"}}>
+                          <div className="data-label" style={{color:"#ef4444"}}>⚠️ Risk Factors</div>
+                          <ul className="bullet-list">{d.risk_factors.map((f,i)=><li key={i} style={{color:"#fca5a5"}}><span>•</span><span>{f}</span></li>)}</ul>
+                        </div>
+                      )}
+                      {analysis.upcoming_events?.length>0&&(
+                        <div className="data-row">
+                          <div className="data-label">📅 Upcoming Events</div>
+                          <div style={{marginTop:6}}>{analysis.upcoming_events.map((e,i)=><span key={i} className="tag" style={{background:"#422006",border:"1px solid rgba(245,158,11,0.2)",color:"#fcd34d"}}>{e}</span>)}</div>
+                        </div>
+                      )}
+                      {analysis.news_summary&&(
+                        <div className="data-row"><div className="data-label">📰 News Summary</div><div className="data-val">{analysis.news_summary}</div></div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              <div style={{padding:"10px 16px",borderTop:"1px solid #1f2937",fontSize:10,color:"#374151",textAlign:"center"}}>
+                {analysis.disclaimer||"Educational purposes only. Not financial advice. Trade at your own risk."}
+              </div>
+            </div>
+          )}
+
+          {!analysis&&!loading&&!error&&(
+            <div className="empty-state">
+              <div style={{fontSize:48,marginBottom:10}}>📊</div>
+              <div style={{fontSize:14}}>Select instrument + mode</div>
+              <div style={{fontSize:12,marginTop:4}}>then tap Analyse</div>
+            </div>
+          )}
+
+          <div className="footer-note">AI analysis • Always use your own judgement • Not financial advice</div>
+        </div>
+      </div>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
