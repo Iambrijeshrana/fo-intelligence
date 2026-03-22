@@ -233,8 +233,22 @@ IMPORTANT: Respond with ONLY a valid JSON object. No explanation, no markdown, n
     const e = clean.lastIndexOf("}");
     if (s === -1 || e === -1) throw new Error("No JSON found");
 
-    const jsonStr = clean.substring(s, e + 1);
-    return JSON.parse(jsonStr);
+    let jsonStr = clean.substring(s, e + 1);
+
+    // Fix common JSON issues from free models
+    jsonStr = jsonStr
+      .replace(/,\s*}/g, "}")          // trailing commas in objects
+      .replace(/,\s*]/g, "]")          // trailing commas in arrays
+      .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, " ") // control chars
+      .replace(/\\'/g, "'")            // escaped single quotes
+      .replace(/([{,]\s*)(\w+):/g, '$1"$2":'); // unquoted keys
+
+    try {
+      return JSON.parse(jsonStr);
+    } catch(parseErr) {
+      // Last resort — extract what we can
+      throw new Error("JSON parse failed: " + parseErr.message);
+    }
   }
 
   async function fetchAnalysis(apiKey, inst, mode, setLoadingMsg) {
