@@ -402,7 +402,7 @@ async function callAI(messages, maxTokens=1800){
   if(!key) throw new Error("No Anthropic API key. Add it above.");
   const res = await fetch(ANT_API_URL,{
     method:"POST",
-    headers:{"Content-Type":"application/json","anthropic-version":"2023-06-01","x-api-key":key},
+    headers:{"Content-Type":"application/json","anthropic-version":"2023-06-01","x-api-key":key,"anthropic-dangerous-direct-browser-access":"true"},
     body:JSON.stringify({
       model:"claude-sonnet-4-20250514",
       max_tokens:maxTokens,
