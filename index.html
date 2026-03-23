@@ -50,7 +50,6 @@ textarea{width:100%;padding:8px 10px;border-radius:8px;background:#111827;border
   <button onclick="switchTab('journal')">📓 Journal</button>
   <button onclick="switchTab('history')">🕐 History</button>
   <button onclick="switchTab('accuracy')">🎯 Accuracy</button>
-  <button onclick="switchTab('equity')">📈 Equity</button>
 </div>
 
 <div class="box">
@@ -227,33 +226,6 @@ textarea{width:100%;padding:8px 10px;border-radius:8px;background:#111827;border
 
 
 <!-- ═══════════ EQUITY TAB ═══════════ -->
-<div id="tab-equity" class="tab">
-  <div style="text-align:center;margin-bottom:20px;">
-    <div style="font-size:10px;letter-spacing:.2em;color:#4b5563;text-transform:uppercase;margin-bottom:4px;">AI Powered • Live Search</div>
-    <div style="font-size:22px;font-weight:800;background:linear-gradient(135deg,#f59e0b,#10b981);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Equity Scanner</div>
-    <div style="font-size:11px;color:#4b5563;margin-top:4px;">Top picks — Stocks • ETFs • Mutual Funds</div>
-  </div>
-
-  <!-- Section tabs -->
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px;">
-    <button id="esec-stocks" onclick="selectEquitySec('stocks')"
-      style="padding:10px 6px;border-radius:12px;border:1.5px solid #f59e0b;background:rgba(245,158,11,.1);cursor:pointer;text-align:center;">
-      <div style="font-size:18px;margin-bottom:2px;">🏢</div>
-      <div style="font-size:10px;font-weight:700;color:#f59e0b;">Stocks</div>
-      <div style="font-size:9px;color:#374151;">Buy today</div>
-    </button>
-    <button id="esec-etf" onclick="selectEquitySec('etf')"
-      style="padding:10px 6px;border-radius:12px;border:1.5px solid #1f2937;background:#0f172a;cursor:pointer;text-align:center;">
-      <div style="font-size:18px;margin-bottom:2px;">📊</div>
-      <div style="font-size:10px;font-weight:700;color:#6b7280;">ETFs</div>
-      <div style="font-size:9px;color:#374151;">Buy this week</div>
-    </button>
-    <button id="esec-mf" onclick="selectEquitySec('mf')"
-      style="padding:10px 6px;border-radius:12px;border:1.5px solid #1f2937;background:#0f172a;cursor:pointer;text-align:center;">
-      <div style="font-size:18px;margin-bottom:2px;">💰</div>
-      <div style="font-size:10px;font-weight:700;color:#6b7280;">Mutual Funds</div>
-      <div style="font-size:9px;color:#374151;">SIP/Lumpsum</div>
-    </button>
   </div>
 
   <button id="equityBtn" onclick="runEquityScan()"
@@ -1361,7 +1333,7 @@ function switchTab(id){
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
   document.getElementById("tab-"+id).classList.add("active");
-  const idx={analysis:0,stocks:1,journal:2,history:3,accuracy:4,equity:5}[id];
+  const idx={analysis:0,stocks:1,equity:2,journal:3,history:4,accuracy:5}[id];
   document.querySelectorAll(".nav button")[idx].classList.add("active");
   if(id==="equity")   initEquityGrid();
   if(id==="journal")  renderJournal();
@@ -1372,11 +1344,11 @@ function switchTab(id){
 
 function updateJournalBadge(){
   const n=LS.trades().length;
-  document.querySelectorAll(".nav button")[2].textContent="📓 Journal"+(n>0?` (${n})`:"");
+  document.querySelectorAll(".nav button")[3].textContent="📓 Journal"+(n>0?` (${n})`:"");
 }
 function updateHistoryBadge(){
   const n=LS.history().length;
-  document.querySelectorAll(".nav button")[3].textContent="🕐 History"+(n>0?` (${n})`:"");
+  document.querySelectorAll(".nav button")[4].textContent="🕐 History"+(n>0?` (${n})`:"");
 }
 
 
