@@ -45,8 +45,7 @@ textarea{width:100%;padding:8px 10px;border-radius:8px;background:#111827;border
 <!-- NAV -->
 <div class="nav" id="nav">
   <button class="active" onclick="switchTab('analysis')">📊 Analysis</button>
-  <button onclick="switchTab('stocks')">🔍 F&O</button>
-  <button onclick="switchTab('equity')">📈 Equity</button>
+  <button onclick="switchTab('stocks')">🔍 Stocks</button>
   <button onclick="switchTab('journal')">📓 Journal</button>
   <button onclick="switchTab('history')">🕐 History</button>
   <button onclick="switchTab('accuracy')">🎯 Accuracy</button>
@@ -146,45 +145,6 @@ textarea{width:100%;padding:8px 10px;border-radius:8px;background:#111827;border
   </div>
 </div>
 
-
-<!-- ═══════════ EQUITY TAB ═══════════ -->
-<div id="tab-equity" class="tab">
-  <div style="text-align:center;margin-bottom:20px;">
-    <div style="font-size:10px;letter-spacing:.2em;color:#4b5563;text-transform:uppercase;margin-bottom:4px;">AI Powered • Live Research</div>
-    <div style="font-size:22px;font-weight:800;background:linear-gradient(135deg,#f59e0b,#10b981);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Equity Intelligence</div>
-    <div style="font-size:11px;color:#4b5563;margin-top:4px;">Stocks • ETFs • Mutual Funds</div>
-  </div>
-
-  <!-- Section Selector -->
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:16px;" id="equitySecGrid"></div>
-
-  <!-- Scan Button -->
-  <button id="equityScanBtn" onclick="runEquityScan()" style="width:100%;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg,#f59e0b,#10b981);color:white;font-weight:800;font-size:15px;cursor:pointer;margin-bottom:12px;box-shadow:0 0 30px rgba(245,158,11,.3);">
-    🔍 Scan Now
-  </button>
-
-  <!-- Progress -->
-  <div id="equityProgress" class="prog hidden">
-    <div id="equityProgressStep" style="font-size:13px;color:#e5e7eb;margin-bottom:14px;text-align:center;">🔍 Researching...</div>
-    <div class="progbar"><div style="width:60%;height:8px;border-radius:999px;background:linear-gradient(90deg,#f59e0b,#10b981);"></div></div>
-    <div style="text-align:center;margin-top:14px;">
-      <button onclick="cancelEquityScan()" style="padding:6px 14px;border-radius:8px;border:1px solid #dc2626;background:#1c0a0a;color:#fca5a5;font-size:12px;cursor:pointer;">✕ Cancel</button>
-    </div>
-  </div>
-
-  <!-- Error -->
-  <div id="equityError" class="err hidden"></div>
-
-  <!-- Result -->
-  <div id="equityResult"></div>
-
-  <!-- Empty -->
-  <div id="equityEmpty" style="text-align:center;padding:40px 0;color:#374151;">
-    <div style="font-size:48px;margin-bottom:10px;">📈</div>
-    <div style="font-size:14px;">Select section → tap Scan</div>
-    <div style="font-size:12px;margin-top:4px;color:#1f2937;">AI researches live recommendations</div>
-  </div>
-</div>
 <!-- ═══════════ JOURNAL TAB ═══════════ -->
 <div id="tab-journal" class="tab">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
@@ -223,7 +183,6 @@ textarea{width:100%;padding:8px 10px;border-radius:8px;background:#111827;border
     <div style="font-size:12px;">Log trades in Journal to track accuracy</div>
   </div>
 </div>
-
 
 </div><!-- end .box -->
 
@@ -483,7 +442,7 @@ async function saveToSheet(data){
 // ═══════════════════════════════════════════════════════
 // PROMPT
 // ═══════════════════════════════════════════════════════
-function buildPrompt(inst, mode, livePrice, newsCtx){
+function buildPrompt(inst, mode, livePrice){
   const expiry = getExpiryDate(inst);
   const priceBlock = livePrice
     ? `CURRENT PRICE (Upstox real-time — 100% accurate):
@@ -495,12 +454,12 @@ function buildPrompt(inst, mode, livePrice, newsCtx){
   ⚠️ DO NOT search for current price. Use above values. Only search news, OI, global cues.`
     : `(No live price — search for current price via web)`;
 
-  const modeLabel = {
-    morning:"Pre-market analysis for today",
-    opening:"Pre-open gap trade (9:00-9:15 AM, ATM strike, 30-60 min hold)",
-    intraday:"Intraday live session analysis",
-    nextday:"Next day gap prediction + overnight trade setup",
-    eod:"End of day summary + tomorrow prep",
+  const mCtx = {
+    morning:`Pre-market. Search: SGX Nifty, Dow/Nasdaq close, Asian markets, VIX, FII/DII yesterday, USD/INR, morning news.`,
+    opening:`Pre-open 9:00-9:15 AM. Search: gap direction now, breaking news. ATM strike, 30-60 min trade only.`,
+    intraday:`Intraday live. Search: current high/low, breaking news, US futures, crude oil, FII today.`,
+    nextday:`Next day gap prediction. Search: SGX Nifty now, US futures, after-hours results, global events tonight, FII today. Give overnight trade setup.`,
+    eod:`EOD. Search: closing price, what drove move, FII/DII today, global close, overnight risks.`,
   };
 
   return `Expert Indian F&O trader, 15+ years experience, ${inst.label} specialist.
@@ -533,37 +492,7 @@ function parseJSON(text){
   return JSON.parse(clean.substring(s,e+1));
 }
 
-// Call 1 — web search only, tiny prompt, get news
-async function fetchNewsForInstrument(inst, mode, livePrice) {
-  const key = LS.getAntKey();
-  if(!key) throw new Error("No Anthropic API key. Add it above.");
-  const priceCtx = livePrice ? `Current price: ${livePrice.price}, Change: ${livePrice.change}` : "";
-  const queries = {
-    morning:  `Search: SGX Nifty level now, overnight US markets close, Asian markets today, India VIX, FII/DII yesterday. ${priceCtx}`,
-    opening:  `Search: ${inst.label} gap direction right now, breaking news last 30 min. ${priceCtx}`,
-    intraday: `Search: ${inst.label} latest news today, US futures live, FII activity today, any market moving news. ${priceCtx}`,
-    nextday:  `Search: SGX Nifty futures now, US futures direction, after-hours results India tonight, global risk events. ${priceCtx}`,
-    eod:      `Search: ${inst.label} closing summary today, FII/DII data, what drove market today, overnight risks. ${priceCtx}`,
-  };
-  const res = await fetch(ANT_API_URL,{
-    method:"POST",
-    headers:{"Content-Type":"application/json","anthropic-version":"2023-06-01","x-api-key":key,"anthropic-dangerous-direct-browser-access":"true"},
-    body:JSON.stringify({
-      model:"claude-sonnet-4-20250514",
-      max_tokens:400,
-      tools:[{type:"web_search_20250305",name:"web_search"}],
-      messages:[{role:"user",content:`${queries[mode]||queries.intraday}
-
-Return ONLY a 5-line bullet point summary of key market facts. No JSON. No extra text.`}],
-    }),
-  });
-  const data = await res.json();
-  if(data.error) throw new Error(data.error.message);
-  return data.content.filter(b=>b.type==="text").map(b=>b.text).join("").substring(0,800);
-}
-
-// Call 2 — analysis only, no web search, uses news from Call 1
-async function callAI(messages, maxTokens=1000){
+async function callAI(messages, maxTokens=1800){
   const key = LS.getAntKey();
   if(!key) throw new Error("No Anthropic API key. Add it above.");
   const res = await fetch(ANT_API_URL,{
@@ -572,7 +501,8 @@ async function callAI(messages, maxTokens=1000){
     body:JSON.stringify({
       model:"claude-sonnet-4-20250514",
       max_tokens:maxTokens,
-      messages, // NO web search tool here
+      tools:[{type:"web_search_20250305",name:"web_search"}],
+      messages,
     }),
   });
   const data = await res.json();
@@ -647,12 +577,8 @@ async function runAnalysis(){
     // Fetch live price from Upstox
     const livePrice = await fetchLivePrice(selectedInst);
 
-    // Call 1 — fetch live news (small web search call ~5k tokens)
-    const newsCtx = await fetchNewsForInstrument(inst, mode.id, livePrice);
-    console.log("News fetched:", newsCtx.substring(0,100));
-
-    // Call 2 — analysis with news context, no web search (~5k tokens total)
-    const text = await callAI([{role:"user",content:buildPrompt(inst, mode.id, livePrice, newsCtx)}]);
+    // Build prompt and call AI
+    const text = await callAI([{role:"user",content:buildPrompt(inst,mode.id,livePrice)}]);
     clearTimeout(timeoutId);
 
     const result = parseJSON(text);
@@ -1182,17 +1108,7 @@ async function runScan(){
   document.getElementById("scanEmpty").classList.add("hidden");
   scanAbort = new AbortController();
   try{
-    // For stocks, keep web search but limit tokens strictly
-    const key = LS.getAntKey();
-    if(!key) throw new Error("No Anthropic API key. Add it above.");
-    const res2 = await fetch(ANT_API_URL,{
-      method:"POST",
-      headers:{"Content-Type":"application/json","anthropic-version":"2023-06-01","x-api-key":key,"anthropic-dangerous-direct-browser-access":"true"},
-      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:800,tools:[{type:"web_search_20250305",name:"web_search"}],messages:[{role:"user",content:buildStockPrompt(selectedSector)}]}),
-    });
-    const d2 = await res2.json();
-    if(d2.error) throw new Error(d2.error.message);
-    const text = d2.content.filter(b=>b.type==="text").map(b=>b.text).join("");
+    const text = await callAI([{role:"user",content:buildStockPrompt(selectedSector)}], 1200);
     const data = parseJSON(text);
     renderScanResult(data);
   }catch(err){
@@ -1308,22 +1224,20 @@ function switchTab(id){
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
   document.getElementById("tab-"+id).classList.add("active");
-  const idx={analysis:0,stocks:1,equity:2,journal:3,history:4,accuracy:5}[id];
+  const idx={analysis:0,stocks:1,journal:2,history:3,accuracy:4}[id];
   document.querySelectorAll(".nav button")[idx].classList.add("active");
-  if(id==="equity")   initEquityGrid();
   if(id==="journal")  renderJournal();
-  if(id==="equity")   { document.getElementById("equityEmpty").classList.remove("hidden"); selectEquitySec("stocks"); }
   if(id==="history")  renderHistory();
   if(id==="accuracy") renderAccuracy();
 }
 
 function updateJournalBadge(){
   const n=LS.trades().length;
-  document.querySelectorAll(".nav button")[3].textContent="📓 Journal"+(n>0?` (${n})`:"");
+  document.querySelectorAll(".nav button")[2].textContent="📓 Journal"+(n>0?` (${n})`:"");
 }
 function updateHistoryBadge(){
   const n=LS.history().length;
-  document.querySelectorAll(".nav button")[4].textContent="🕐 History"+(n>0?` (${n})`:"");
+  document.querySelectorAll(".nav button")[3].textContent="🕐 History"+(n>0?` (${n})`:"");
 }
 
 
@@ -1376,389 +1290,6 @@ function retryPremiumFetch() {
   const inst = INSTRUMENTS.find(i=>i.id===selectedInst);
   autoFetchPremium(currentData, inst);
 }
-
-// ═══════════════════════════════════════════════════════
-// EQUITY SCANNER
-// ═══════════════════════════════════════════════════════
-let selectedEquitySec = "stocks";
-let equityAbort = null;
-
-function selectEquitySec(sec) {
-  selectedEquitySec = sec;
-  const colors = {stocks:"#f59e0b", etf:"#10b981", mf:"#6366f1"};
-  ["stocks","etf","mf"].forEach(s => {
-    const btn = document.getElementById("esec-"+s);
-    if(!btn) return;
-    btn.style.borderColor = s===sec ? colors[s] : "#1f2937";
-    btn.style.background  = s===sec ? `rgba(${s==="stocks"?"245,158,11":s==="etf"?"16,185,129":"99,102,241"},.1)` : "#0f172a";
-    btn.querySelector("div:nth-child(2)").style.color = s===sec ? colors[s] : "#6b7280";
-  });
-  const labels = {stocks:"Top 5 Stocks to Buy",etf:"Top 5 ETFs to Buy",mf:"Top 5 MF — SIP/Lumpsum"};
-  document.getElementById("equityBtn").textContent = "🔍 Scan " + labels[sec];
-}
-
-function buildEquityPrompt(sec) {
-  const today = new Date().toLocaleDateString("en-IN",{weekday:"long",day:"2-digit",month:"short",year:"numeric"});
-  const prompts = {
-    stocks: `Expert Indian equity analyst. TODAY: ${today}.
-Search web NOW for: top performing Indian stocks today, stocks with strong buy signals, breakout stocks NSE/BSE today, stocks with strong earnings/news catalyst, FII buying in which stocks today.
-Pick TOP 5 stocks to BUY today for short term (intraday to 5 days).
-Criteria: strong momentum, news catalyst, good risk/reward, liquid F&O stocks preferred.
-CRITICAL: All values max 8 words. Compact JSON only.
-Respond ONLY with JSON:
-{"market_mood":"BULLISH or BEARISH or MIXED","top_picks":[{"name":"STOCK NAME","exchange":"NSE or BSE","cmp":"current price","target":"target price","sl":"stop loss","horizon":"Intraday or 2-5 days","reason":"max 6 words","confidence":"HIGH or MEDIUM"},{"name":"","exchange":"","cmp":"","target":"","sl":"","horizon":"","reason":"","confidence":""},{"name":"","exchange":"","cmp":"","target":"","sl":"","horizon":"","reason":"","confidence":""},{"name":"","exchange":"","cmp":"","target":"","sl":"","horizon":"","reason":"","confidence":""},{"name":"","exchange":"","cmp":"","target":"","sl":"","horizon":"","reason":"","confidence":""}],"disclaimer":"AI only. Not SEBI advice. Verify before investing."}`,
-
-    etf: `Expert Indian ETF analyst. TODAY: ${today}.
-Search web NOW for: best performing Indian ETFs this week, which sectors are outperforming, Nifty BeES BankBeES Gold ETF performance, sector rotation happening in India markets, top ETF inflows this week.
-Pick TOP 5 ETFs to BUY this week for 1-4 week horizon.
-Focus on: index ETFs, sector ETFs, gold/silver ETFs, international ETFs available on NSE.
-CRITICAL: All values max 8 words. Compact JSON only.
-Respond ONLY with JSON:
-{"market_mood":"BULLISH or BEARISH or MIXED","top_picks":[{"name":"ETF NAME","symbol":"NSE symbol","cmp":"current NAV/price","target":"target price","sl":"stop loss","horizon":"1-4 weeks","reason":"max 6 words","confidence":"HIGH or MEDIUM"},{"name":"","symbol":"","cmp":"","target":"","sl":"","horizon":"","reason":"","confidence":""},{"name":"","symbol":"","cmp":"","target":"","sl":"","horizon":"","reason":"","confidence":""},{"name":"","symbol":"","cmp":"","target":"","sl":"","horizon":"","reason":"","confidence":""},{"name":"","symbol":"","cmp":"","target":"","sl":"","horizon":"","reason":"","confidence":""}],"disclaimer":"AI only. Not SEBI advice. Verify before investing."}`,
-
-    mf: `Expert Indian mutual fund advisor. TODAY: ${today}.
-Search web NOW for: best performing mutual funds India 2025, top SIP funds recommended by experts, best large cap mid cap small cap funds current, any recent fund house news or rating changes, current market conditions for lumpsum vs SIP.
-Pick TOP 5 mutual funds for SIP or lumpsum investment NOW.
-Include mix of: large cap, mid cap, flexi cap, one thematic if relevant.
-CRITICAL: All values max 8 words. Compact JSON only.
-Respond ONLY with JSON:
-{"market_timing":"GOOD FOR SIP or GOOD FOR LUMPSUM or SIP PREFERRED","top_picks":[{"name":"FUND NAME","fund_house":"AMC name","category":"Large/Mid/Flexi cap","nav":"current NAV","returns_1y":"1 year return","returns_3y":"3 year return","min_sip":"min SIP amount","type":"SIP or LUMPSUM or BOTH","reason":"max 6 words","risk":"LOW or MEDIUM or HIGH"},{"name":"","fund_house":"","category":"","nav":"","returns_1y":"","returns_3y":"","min_sip":"","type":"","reason":"","risk":""},{"name":"","fund_house":"","category":"","nav":"","returns_1y":"","returns_3y":"","min_sip":"","type":"","reason":"","risk":""},{"name":"","fund_house":"","category":"","nav":"","returns_1y":"","returns_3y":"","min_sip":"","type":"","reason":"","risk":""},{"name":"","fund_house":"","category":"","nav":"","returns_1y":"","returns_3y":"","min_sip":"","type":"","reason":"","risk":""}],"disclaimer":"AI only. Not SEBI registered advisor. Verify with AMFI before investing."}`,
-  };
-  return prompts[sec] || prompts.stocks;
-}
-
-async function runEquityScan() {
-  equityAbort = new AbortController();
-  document.getElementById("equityBtn").classList.add("hidden");
-  document.getElementById("equityProgress").classList.remove("hidden");
-  document.getElementById("equityError").classList.add("hidden");
-  document.getElementById("equityResult").innerHTML = "";
-  document.getElementById("equityEmpty").classList.add("hidden");
-
-  const steps = ["🔍 Searching live market data...","📊 Analysing top picks...","✅ Building recommendations..."];
-  let si = 0;
-  const stepTimer = setInterval(()=>{ if(si<steps.length) document.getElementById("equityStep").textContent=steps[si++]; },8000);
-
-  try {
-    const key = LS.getAntKey();
-    if(!key) throw new Error("No Anthropic API key. Add it above.");
-    const res = await fetch(ANT_API_URL, {
-      method:"POST",
-      signal: equityAbort.signal,
-      headers:{"Content-Type":"application/json","anthropic-version":"2023-06-01","x-api-key":key,"anthropic-dangerous-direct-browser-access":"true"},
-      body:JSON.stringify({
-        model:"claude-sonnet-4-20250514",
-        max_tokens:1000,
-        tools:[{type:"web_search_20250305",name:"web_search"}],
-        messages:[{role:"user",content:buildEquityPrompt(selectedEquitySec)}],
-      }),
-    });
-    clearInterval(stepTimer);
-    const data = await res.json();
-    if(data.error) throw new Error(data.error.message);
-    const text = data.content.filter(b=>b.type==="text").map(b=>b.text).join("");
-    const result = parseJSON(text);
-    renderEquityResult(result);
-  } catch(err) {
-    clearInterval(stepTimer);
-    const el = document.getElementById("equityError");
-    el.textContent = "⚠️ "+err.message;
-    el.classList.remove("hidden");
-  } finally {
-    document.getElementById("equityBtn").classList.remove("hidden");
-    document.getElementById("equityProgress").classList.add("hidden");
-  }
-}
-
-function cancelEquity() {
-  if(equityAbort) equityAbort.abort();
-  document.getElementById("equityBtn").classList.remove("hidden");
-  document.getElementById("equityProgress").classList.add("hidden");
-}
-
-function renderEquityResult(data) {
-  const isMF = selectedEquitySec === "mf";
-  const isETF = selectedEquitySec === "etf";
-  const color = selectedEquitySec==="stocks"?"#f59e0b":selectedEquitySec==="etf"?"#10b981":"#6366f1";
-  const moodKey = isMF ? "market_timing" : "market_mood";
-  const mood = data[moodKey] || "—";
-  const moodColor = mood.includes("BULLISH")||mood.includes("GOOD")?"#10b981":mood.includes("BEARISH")?"#ef4444":"#f59e0b";
-
-  const cards = (data.top_picks||[]).filter(p=>p.name).map((p,i)=>{
-    if(isMF) {
-      const riskC = p.risk==="LOW"?"#10b981":p.risk==="MEDIUM"?"#f59e0b":"#ef4444";
-      const typeC = p.type==="SIP"?"#6366f1":p.type==="LUMPSUM"?"#f59e0b":"#10b981";
-      return `<div style="background:#0f172a;border:1.5px solid #6366f130;border-radius:14px;padding:14px;margin-bottom:8px;">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;">
-          <div style="flex:1;">
-            <div style="font-weight:900;font-size:15px;color:white;margin-bottom:2px;">${p.name}</div>
-            <div style="font-size:11px;color:#6b7280;">${p.fund_house||""} • ${p.category||""}</div>
-          </div>
-          <div style="display:flex;gap:6px;flex-shrink:0;">
-            <span style="padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;background:${typeC}20;border:1px solid ${typeC}40;color:${typeC};">${p.type||"—"}</span>
-            <span style="padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;background:${riskC}20;border:1px solid ${riskC}40;color:${riskC};">${p.risk||"—"}</span>
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px;">
-          <div style="background:#111827;border-radius:8px;padding:8px;text-align:center;"><div style="font-size:9px;color:#4b5563;margin-bottom:2px;">NAV</div><div style="font-size:11px;font-weight:700;color:white;">₹${p.nav||"—"}</div></div>
-          <div style="background:#111827;border-radius:8px;padding:8px;text-align:center;"><div style="font-size:9px;color:#4b5563;margin-bottom:2px;">1Y Return</div><div style="font-size:11px;font-weight:700;color:#10b981;">${p.returns_1y||"—"}</div></div>
-          <div style="background:#111827;border-radius:8px;padding:8px;text-align:center;"><div style="font-size:9px;color:#4b5563;margin-bottom:2px;">3Y Return</div><div style="font-size:11px;font-weight:700;color:#10b981;">${p.returns_3y||"—"}</div></div>
-          <div style="background:#111827;border-radius:8px;padding:8px;text-align:center;"><div style="font-size:9px;color:#4b5563;margin-bottom:2px;">Min SIP</div><div style="font-size:11px;font-weight:700;color:white;">₹${p.min_sip||"500"}</div></div>
-        </div>
-        ${p.reason?`<div style="font-size:12px;color:#9ca3af;">📌 ${p.reason}</div>`:""}
-      </div>`;
-    } else {
-      return `<div style="background:#0f172a;border:1.5px solid ${color}30;border-radius:14px;padding:14px;margin-bottom:8px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-          <div>
-            <div style="font-weight:900;font-size:16px;color:white;">${p.name}</div>
-            <div style="font-size:11px;color:#6b7280;">${p.exchange||""} • ${p.horizon||""}</div>
-          </div>
-          <span style="padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:${p.confidence==="HIGH"?"rgba(16,185,129,.2)":"rgba(245,158,11,.2)"};border:1px solid ${p.confidence==="HIGH"?"rgba(16,185,129,.4)":"rgba(245,158,11,.4)"};color:${p.confidence==="HIGH"?"#6ee7b7":"#fcd34d"};">${p.confidence||"—"}</span>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px;">
-          <div style="background:#111827;border-radius:8px;padding:8px;text-align:center;"><div style="font-size:9px;color:#4b5563;margin-bottom:2px;">CMP ₹</div><div style="font-size:12px;font-weight:700;color:white;">${p.cmp||"—"}</div></div>
-          <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:9px;color:#10b981;margin-bottom:2px;">Target ₹</div><div style="font-size:12px;font-weight:700;color:#6ee7b7;">${p.target||"—"}</div></div>
-          <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:9px;color:#ef4444;margin-bottom:2px;">Stop Loss ₹</div><div style="font-size:12px;font-weight:700;color:#fca5a5;">${p.sl||"—"}</div></div>
-        </div>
-        ${p.reason?`<div style="font-size:12px;color:#9ca3af;">📌 ${p.reason}</div>`:""}
-      </div>`;
-    }
-  }).join("");
-
-  const title = {stocks:"🏢 Top 5 Stocks to Buy",etf:"📊 Top 5 ETFs to Buy",mf:"💰 Top 5 Mutual Funds"}[selectedEquitySec];
-
-  document.getElementById("equityResult").innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#0f172a;border:1px solid ${moodColor}30;border-radius:12px;margin-bottom:14px;">
-      <div style="font-size:10px;color:#4b5563;text-transform:uppercase;">${isMF?"Market Timing":"Market Mood"}</div>
-      <div style="font-weight:800;font-size:13px;color:${moodColor};">${mood}</div>
-    </div>
-    <div style="font-weight:800;font-size:14px;color:${color};margin-bottom:10px;">${title}</div>
-    ${cards}
-    <div style="padding:10px 14px;background:#0f172a;border-radius:10px;font-size:10px;color:#374151;text-align:center;margin-top:8px;">${data.disclaimer||""}</div>`;
-}
-
-
-// ═══════════════════════════════════════════════════════
-// EQUITY SCANNER
-// ═══════════════════════════════════════════════════════
-const EQUITY_SECTIONS = [
-  {id:"stocks", label:"Stocks",  emoji:"🏢", desc:"Top 5 buy today"},
-  {id:"etf",    label:"ETFs",    emoji:"📊", desc:"Top 5 buy this week"},
-  {id:"mf_sip", label:"MF SIP",  emoji:"💰", desc:"Top 5 SIP picks"},
-  {id:"mf_lump",label:"MF Lump", emoji:"💎", desc:"Lump sum now"},
-];
-
-let selectedEquitySec = "stocks";
-let equityAbort = null;
-
-function buildEquityPrompt(section) {
-  const today = new Date().toLocaleDateString("en-IN",{weekday:"long",day:"2-digit",month:"short",year:"numeric"});
-  const prompts = {
-    stocks:`Expert Indian equity analyst. TODAY: ${today}.
-Search web for top momentum stocks in Indian market today.
-Find TOP 5 stocks to BUY today based on: technical breakout, news catalyst, strong FII/DII buying, sector momentum.
-For each: current price range, target (5-10% upside), stop loss, hold period (intraday/2-5 days), reason.
-CRITICAL: Values max 8 words each. JSON only.
-{"market_mood":"BULLISH or BEARISH or MIXED","picks":[{"name":"","ticker":"NSE symbol","price_range":"e.g. 2450-2480","target":"e.g. 2650","sl":"e.g. 2380","hold":"e.g. 2-3 days","reason":"max 6 words","confidence":"HIGH or MEDIUM"},{"name":"","ticker":"","price_range":"","target":"","sl":"","hold":"","reason":"","confidence":""},{"name":"","ticker":"","price_range":"","target":"","sl":"","hold":"","reason":"","confidence":""},{"name":"","ticker":"","price_range":"","target":"","sl":"","hold":"","reason":"","confidence":""},{"name":"","ticker":"","price_range":"","target":"","sl":"","hold":"","reason":"","confidence":""}],"disclaimer":"AI only. Not SEBI advice."}`,
-
-    etf:`Expert Indian ETF analyst. TODAY: ${today}.
-Search web for best ETFs to buy this week based on sector momentum and global cues.
-Consider: Nifty BeES, Bank BeES, Gold ETF, IT ETF, PSU ETF, Pharma ETF, Midcap ETF, International ETFs.
-Find TOP 5 ETFs to BUY this week. For each: current NAV range, target return, hold period, reason.
-CRITICAL: Values max 8 words. JSON only.
-{"market_mood":"BULLISH or BEARISH or MIXED","picks":[{"name":"ETF name","ticker":"NSE symbol","nav_range":"e.g. 245-248","target":"e.g. 265","sl":"e.g. 238","hold":"e.g. 1-2 weeks","reason":"max 6 words","confidence":"HIGH or MEDIUM"},{"name":"","ticker":"","nav_range":"","target":"","sl":"","hold":"","reason":"","confidence":""},{"name":"","ticker":"","nav_range":"","target":"","sl":"","hold":"","reason":"","confidence":""},{"name":"","ticker":"","nav_range":"","target":"","sl":"","hold":"","reason":"","confidence":""},{"name":"","ticker":"","nav_range":"","target":"","sl":"","hold":"","reason":"","confidence":""}],"disclaimer":"AI only. Not SEBI advice."}`,
-
-    mf_sip:`Expert Indian mutual fund advisor. TODAY: ${today}.
-Search for best mutual funds for SIP (Systematic Investment Plan) right now based on:
-- Consistent 3-5 year returns
-- Low expense ratio  
-- Strong fund manager track record
-- Current market conditions
-Find TOP 5 MFs for monthly SIP. Categories: Large cap, Mid cap, Flexi cap, ELSS, Debt.
-CRITICAL: Values max 8 words. JSON only.
-{"market_context":"brief market context for SIP","picks":[{"name":"Fund name","amc":"AMC name","category":"e.g. Flexi Cap","min_sip":"e.g. ₹500","returns_3yr":"e.g. 18.5%","returns_5yr":"e.g. 22.3%","reason":"max 6 words","risk":"LOW or MEDIUM or HIGH"},{"name":"","amc":"","category":"","min_sip":"","returns_3yr":"","returns_5yr":"","reason":"","risk":""},{"name":"","amc":"","category":"","min_sip":"","returns_3yr":"","returns_5yr":"","reason":"","risk":""},{"name":"","amc":"","category":"","min_sip":"","returns_3yr":"","returns_5yr":"","reason":"","risk":""},{"name":"","amc":"","category":"","min_sip":"","returns_3yr":"","returns_5yr":"","reason":"","risk":""}],"best_for":"type of investor this suits","disclaimer":"AI only. Consult SEBI advisor before investing."}`,
-
-    mf_lump:`Expert Indian mutual fund advisor. TODAY: ${today}.
-Search for best mutual funds for LUMP SUM investment right now.
-Consider: current market valuation (Nifty PE), sector opportunities, global cues.
-Is it a good time to invest lump sum? If yes which funds? If no suggest STP strategy.
-Find TOP 5 MFs for lump sum now. 
-CRITICAL: Values max 8 words. JSON only.
-{"good_time_to_invest":"YES or NO or PARTIALLY","market_pe":"current Nifty PE","advice":"max 8 words overall advice","picks":[{"name":"Fund name","amc":"AMC name","category":"e.g. Large Cap","amount":"suggested min e.g. ₹50,000","returns_3yr":"e.g. 18.5%","reason":"max 6 words","risk":"LOW or MEDIUM or HIGH","note":"e.g. Use STP if market high"},{"name":"","amc":"","category":"","amount":"","returns_3yr":"","reason":"","risk":"","note":""},{"name":"","amc":"","category":"","amount":"","returns_3yr":"","reason":"","risk":"","note":""},{"name":"","amc":"","category":"","amount":"","returns_3yr":"","reason":"","risk":"","note":""},{"name":"","amc":"","category":"","amount":"","returns_3yr":"","reason":"","risk":"","note":""}],"disclaimer":"AI only. Consult SEBI advisor before investing."}`,
-  };
-  return prompts[section] || prompts.stocks;
-}
-
-async function runEquityScan() {
-  document.getElementById("equityScanBtn").classList.add("hidden");
-  document.getElementById("equityProgress").classList.remove("hidden");
-  document.getElementById("equityError").classList.add("hidden");
-  document.getElementById("equityResult").innerHTML = "";
-  document.getElementById("equityEmpty").classList.add("hidden");
-
-  equityAbort = new AbortController();
-  const key = LS.getAntKey();
-  if(!key){
-    showEquityError("No Anthropic API key. Add it in Analysis tab.");
-    return;
-  }
-
-  try {
-    const steps = ["🔍 Researching live data...","📊 Analysing picks...","✅ Almost done..."];
-    let si=0;
-    const stepTimer = setInterval(()=>{
-      if(si<steps.length) document.getElementById("equityProgressStep").textContent=steps[si++];
-    },8000);
-
-    const res = await fetch(ANT_API_URL, {
-      method:"POST",
-      signal: equityAbort.signal,
-      headers:{"Content-Type":"application/json","anthropic-version":"2023-06-01","x-api-key":key,"anthropic-dangerous-direct-browser-access":"true"},
-      body:JSON.stringify({
-        model:"claude-sonnet-4-20250514",
-        max_tokens:1000,
-        tools:[{type:"web_search_20250305",name:"web_search"}],
-        messages:[{role:"user",content:buildEquityPrompt(selectedEquitySec)}],
-      }),
-    });
-    clearInterval(stepTimer);
-    const data = await res.json();
-    if(data.error) throw new Error(data.error.message);
-    const text = data.content.filter(b=>b.type==="text").map(b=>b.text).join("");
-    const result = parseJSON(text);
-    renderEquityResult(result, selectedEquitySec);
-  } catch(e) {
-    showEquityError(e.message);
-  } finally {
-    document.getElementById("equityScanBtn").classList.remove("hidden");
-    document.getElementById("equityProgress").classList.add("hidden");
-  }
-}
-
-function cancelEquityScan(){
-  if(equityAbort) equityAbort.abort();
-  document.getElementById("equityScanBtn").classList.remove("hidden");
-  document.getElementById("equityProgress").classList.add("hidden");
-  document.getElementById("equityEmpty").classList.remove("hidden");
-}
-
-function showEquityError(msg){
-  document.getElementById("equityScanBtn").classList.remove("hidden");
-  document.getElementById("equityProgress").classList.add("hidden");
-  const el=document.getElementById("equityError");
-  el.textContent="⚠️ "+msg; el.classList.remove("hidden");
-}
-
-function renderEquityResult(data, section){
-  const isStock = section==="stocks";
-  const isETF   = section==="etf";
-  const isSIP   = section==="mf_sip";
-  const isLump  = section==="mf_lump";
-  const accentColor = isStock?"#6366f1":isETF?"#0ea5e9":isSIP?"#10b981":"#f59e0b";
-
-  let html = "";
-
-  // Market context banner
-  if(data.market_mood||data.market_context||data.good_time_to_invest){
-    const mc = data.market_mood==="BULLISH"?"#10b981":data.market_mood==="BEARISH"?"#ef4444":"#f59e0b";
-    html += `<div style="padding:10px 14px;background:#0f172a;border:1px solid ${accentColor}30;border-radius:12px;margin-bottom:14px;">`;
-    if(data.market_mood) html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;"><span style="font-size:10px;color:#4b5563;text-transform:uppercase;">Market Mood</span><span style="font-weight:800;font-size:13px;color:${mc};">${data.market_mood}</span></div>`;
-    if(data.good_time_to_invest){
-      const gtc=data.good_time_to_invest==="YES"?"#10b981":data.good_time_to_invest==="NO"?"#ef4444":"#f59e0b";
-      html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;"><span style="font-size:10px;color:#4b5563;">Good time for lump sum?</span><span style="font-weight:800;font-size:13px;color:${gtc};">${data.good_time_to_invest}</span>${data.market_pe?`<span style="font-size:10px;color:#4b5563;">• Nifty PE: ${data.market_pe}</span>`:""}</div>`;
-    }
-    if(data.advice) html += `<div style="font-size:12px;color:#9ca3af;margin-top:4px;">${data.advice}</div>`;
-    if(data.market_context) html += `<div style="font-size:12px;color:#9ca3af;">${data.market_context}</div>`;
-    if(data.best_for) html += `<div style="font-size:11px;color:#6b7280;margin-top:4px;">Best for: ${data.best_for}</div>`;
-    html += `</div>`;
-  }
-
-  // Picks
-  const picks = data.picks||[];
-  picks.forEach((p,i)=>{
-    if(!p.name) return;
-    const confC = p.confidence==="HIGH"||p.risk==="LOW"?"#10b981":p.confidence==="MEDIUM"||p.risk==="MEDIUM"?"#f59e0b":"#ef4444";
-    const confLabel = p.confidence||p.risk||"";
-    html += `<div style="background:#0f172a;border:1.5px solid ${accentColor}40;border-radius:14px;padding:14px;margin-bottom:10px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <div style="width:24px;height:24px;border-radius:999px;background:${accentColor}20;border:1px solid ${accentColor}40;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:${accentColor};">${i+1}</div>
-          <div>
-            <div style="font-weight:900;font-size:15px;color:white;">${p.name}</div>
-            <div style="font-size:11px;color:${accentColor};">${p.ticker||p.amc||p.category||""}</div>
-          </div>
-        </div>
-        ${confLabel?`<div style="padding:3px 10px;border-radius:999px;background:${confC}20;border:1px solid ${confC}40;color:${confC};font-size:11px;font-weight:700;">${confLabel}</div>`:""}
-      </div>`;
-
-    if(isStock||isETF){
-      html += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px;">
-        <div style="background:rgba(0,0,0,.3);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:9px;color:#6b7280;margin-bottom:2px;">${isStock?"Price Range":"NAV Range"}</div><div style="font-size:12px;font-weight:700;color:white;">₹${p.price_range||p.nav_range||"—"}</div></div>
-        <div style="background:rgba(16,185,129,.1);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:9px;color:#10b981;margin-bottom:2px;">Target</div><div style="font-size:12px;font-weight:700;color:#6ee7b7;">₹${p.target||"—"}</div></div>
-        <div style="background:rgba(239,68,68,.1);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:9px;color:#ef4444;margin-bottom:2px;">Stop Loss</div><div style="font-size:12px;font-weight:700;color:#fca5a5;">₹${p.sl||"—"}</div></div>
-      </div>
-      ${p.hold?`<div style="font-size:11px;color:#6b7280;margin-bottom:4px;">⏱️ Hold: ${p.hold}</div>`:""}`;
-    }
-
-    if(isSIP){
-      html += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px;">
-        <div style="background:rgba(0,0,0,.3);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:9px;color:#6b7280;margin-bottom:2px;">Min SIP</div><div style="font-size:12px;font-weight:700;color:white;">${p.min_sip||"—"}</div></div>
-        <div style="background:rgba(16,185,129,.1);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:9px;color:#10b981;margin-bottom:2px;">3yr Returns</div><div style="font-size:12px;font-weight:700;color:#6ee7b7;">${p.returns_3yr||"—"}</div></div>
-        <div style="background:rgba(16,185,129,.08);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:9px;color:#10b981;margin-bottom:2px;">5yr Returns</div><div style="font-size:12px;font-weight:700;color:#6ee7b7;">${p.returns_5yr||"—"}</div></div>
-      </div>
-      <div style="font-size:11px;color:#6b7280;margin-bottom:4px;">📁 ${p.category||""} • ${p.amc||""}</div>`;
-    }
-
-    if(isLump){
-      html += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px;">
-        <div style="background:rgba(0,0,0,.3);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:9px;color:#6b7280;margin-bottom:2px;">Min Amount</div><div style="font-size:12px;font-weight:700;color:white;">${p.amount||"—"}</div></div>
-        <div style="background:rgba(16,185,129,.1);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:9px;color:#10b981;margin-bottom:2px;">3yr Returns</div><div style="font-size:12px;font-weight:700;color:#6ee7b7;">${p.returns_3yr||"—"}</div></div>
-        <div style="background:rgba(239,68,68,.08);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:9px;color:#6b7280;margin-bottom:2px;">Risk</div><div style="font-size:12px;font-weight:700;color:${confC};">${p.risk||"—"}</div></div>
-      </div>
-      <div style="font-size:11px;color:#6b7280;margin-bottom:4px;">📁 ${p.category||""} • ${p.amc||""}</div>
-      ${p.note?`<div style="font-size:11px;color:#f59e0b;margin-top:4px;">💡 ${p.note}</div>`:""}`;
-    }
-
-    html += `${p.reason?`<div style="font-size:12px;color:#9ca3af;margin-top:4px;">📌 ${p.reason}</div>`:""}
-    </div>`;
-  });
-
-  // Disclaimer
-  html += `<div style="padding:10px 14px;background:#0f172a;border-radius:10px;font-size:10px;color:#374151;text-align:center;margin-top:8px;">${data.disclaimer||"AI analysis only. Not SEBI registered advice."}</div>`;
-
-  document.getElementById("equityResult").innerHTML = html;
-}
-
-function initEquityGrid(){
-  document.getElementById("equitySecGrid").innerHTML = EQUITY_SECTIONS.map(s=>`
-    <button class="iBtn" id="eqsec-${s.id}" onclick="selectEquitySec('${s.id}')">
-      <div style="font-size:18px;margin-bottom:2px;">${s.emoji}</div>
-      <div style="font-size:9px;font-weight:700;color:#6b7280;">${s.label}</div>
-      <div style="font-size:8px;color:#374151;">${s.desc}</div>
-    </button>`).join("");
-  selectEquitySec("stocks");
-}
-
-function selectEquitySec(id){
-  selectedEquitySec=id;
-  const s=EQUITY_SECTIONS.find(s=>s.id===id);
-  EQUITY_SECTIONS.forEach(sec=>{
-    const btn=document.getElementById("eqsec-"+sec.id);
-    if(!btn)return;
-    const ac=sec.id===id?"#f59e0b":"#1f2937";
-    btn.style.borderColor=ac;
-    btn.style.background=sec.id===id?"rgba(245,158,11,.1)":"#0f172a";
-    btn.querySelector("div:nth-child(2)").style.color=sec.id===id?"#f59e0b":"#6b7280";
-  });
-  const labels={stocks:"Top 5 Stocks to Buy",etf:"Top 5 ETFs to Buy",mf_sip:"Top 5 SIP Picks",mf_lump:"Top 5 Lump Sum Picks"};
-  document.getElementById("equityScanBtn").textContent=`🔍 Scan ${labels[id]||""}`;
-  // Clear previous results
-  document.getElementById("equityResult").innerHTML="";
-  document.getElementById("equityEmpty").classList.remove("hidden");
-  document.getElementById("equityError").classList.add("hidden");
-}
-
 // ═══════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════
