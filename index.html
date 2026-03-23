@@ -448,18 +448,11 @@ function buildPrompt(inst, mode, livePrice){
     : `(No live price — search for current price via web)`;
 
   const mCtx = {
-    morning:`PRE-MARKET BRIEFING for TODAY's trade — before 9:00 AM IST.
-Search: overnight Dow/Nasdaq/S&P500, SGX Nifty now, Asian markets, USD/INR, VIX, FII/DII yesterday, morning news.`,
-    opening:`PRE-OPEN SESSION — 9:00 to 9:15 AM IST. Gap settling now.
-Search: any breaking news last 30 min, which side gap is forming, US closing.
-SHORT TERM trade — 30-60 min only. Strike = ATM.`,
-    intraday:`INTRADAY — live session 9:15 AM to 3 PM IST.
-Search: today's session high/low, breaking news NOW, US futures live, crude live, FII today.`,
-    nextday:`NEXT DAY GAP PREDICTION — use at 3:00-3:30 PM.
-Search: SGX Nifty futures NOW, US futures direction, after-hours results tonight, global events tonight, FII today.
-Predict tomorrow morning gap. Give 3:15 PM overnight trade setup.`,
-    eod:`END OF DAY — after 3:30 PM IST.
-Search: closing price today, what drove today's move, FII/DII today, global close, overnight risks, events this week.`,
+    morning:`Pre-market. Search: SGX Nifty, Dow/Nasdaq close, Asian markets, VIX, FII/DII yesterday, USD/INR, morning news.`,
+    opening:`Pre-open 9:00-9:15 AM. Search: gap direction now, breaking news. ATM strike, 30-60 min trade only.`,
+    intraday:`Intraday live. Search: current high/low, breaking news, US futures, crude oil, FII today.`,
+    nextday:`Next day gap prediction. Search: SGX Nifty now, US futures, after-hours results, global events tonight, FII today. Give overnight trade setup.`,
+    eod:`EOD. Search: closing price, what drove move, FII/DII today, global close, overnight risks.`,
   };
 
   return `Expert Indian F&O trader, 15+ years experience, ${inst.label} specialist.
@@ -472,16 +465,8 @@ ${priceBlock}
 
 ${mCtx[mode]||mCtx.intraday}
 
-RULES:
-- Strong directional bias — avoid NEUTRAL unless truly no trade
-- Strike = slightly OTM (ATM for opening mode)
-- entry_estimate = premium estimate only (verify on option chain)
-- target_multiplier and sl_multiplier relative to entry premium
-
-CRITICAL: ALL JSON values max 8 words. Compact JSON only.
-
-Respond ONLY with JSON starting with {:
-{"current_price":"level","day_range":"low-high","change":"+/-(pct)","simple":{"action":"BUY CALL or BUY PUT or AVOID","strike":"e.g. 23200 CE","entry_estimate":"e.g. 80-100","target_multiplier":"e.g. 1.7x","sl_multiplier":"e.g. 0.5x","expiry":"${expiry}","risk_reward":"e.g. 1:2.2","one_line":"one sentence reason"},"bias":"BULLISH or BEARISH or NEUTRAL","bias_strength":"STRONG or MODERATE or WEAK","confidence":"HIGH or MEDIUM or LOW","technical":{"trend":"UPTREND or DOWNTREND or SIDEWAYS","key_support":["l1","l2"],"key_resistance":["l1","l2"],"upside_target":"level","downside_target":"level","invalidation":"level","pattern":"pattern or None","volume_comment":"brief","rsi_comment":"brief","macd_comment":"brief"},"oi_analysis":{"pcr":"ratio","pcr_interpretation":"brief","max_pain":"level","call_oi_buildup":"levels","put_oi_buildup":"levels","oi_comment":"brief"},"detailed":{"why_this_strike":"brief","strategy_name":"name","greeks_context":"brief","news_catalyst":"brief","geopolitical":"brief","global_cues":"brief","fii_dii":"brief","key_factors":["f1","f2","f3"],"risk_factors":["r1","r2"],"watch_levels":"brief"},"upcoming_events":["e1","e2"],"news_summary":"1-2 sentences","nextday":{"gap_direction":"GAP UP or GAP DOWN or FLAT","gap_points":"e.g. 80-120 pts","probability":"HIGH or MEDIUM or LOW","sgx_nifty":"level","us_futures":"direction","overnight_advice":"HOLD or EXIT or BUY NOW","buy_strike":"e.g. 23100 CE","buy_target":"e.g. 1.7x","buy_sl":"e.g. 0.5x","overnight_risk":"max 6 words","watch_level":"level"},"disclaimer":"AI only. Verify on option chain. Not SEBI advice."}`;
+Strong bias. OTM strike. Values under 6 words each. JSON only:
+{"current_price":"","day_range":"","change":"","simple":{"action":"BUY CALL or BUY PUT or AVOID","strike":"","entry_estimate":"","target_multiplier":"1.7x","sl_multiplier":"0.5x","expiry":"${expiry}","risk_reward":"","one_line":""},"bias":"BULLISH or BEARISH or NEUTRAL","bias_strength":"STRONG or MODERATE or WEAK","confidence":"HIGH or MEDIUM or LOW","technical":{"trend":"","key_support":["",""],"key_resistance":["",""],"upside_target":"","downside_target":"","invalidation":"","pattern":"","volume_comment":"","rsi_comment":"","macd_comment":""},"oi_analysis":{"pcr":"","pcr_interpretation":"","max_pain":"","call_oi_buildup":"","put_oi_buildup":"","oi_comment":""},"detailed":{"why_this_strike":"","strategy_name":"","greeks_context":"","news_catalyst":"","geopolitical":"","global_cues":"","fii_dii":"","key_factors":["","",""],"risk_factors":["",""],"watch_levels":""},"upcoming_events":["",""],"news_summary":"","nextday":{"gap_direction":"","gap_points":"","probability":"","sgx_nifty":"","us_futures":"","overnight_advice":"","buy_strike":"","buy_target":"","buy_sl":"","overnight_risk":"","watch_level":""},"disclaimer":"AI only. Not SEBI advice."}`;
 }
 
 // ═══════════════════════════════════════════════════════
